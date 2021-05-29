@@ -1,6 +1,6 @@
 import React, { useState, useContext } from "react";
 import "./Login.css";
-import { Redirect } from "react-router-dom";
+import { Redirect, Link } from "react-router-dom";
 import { AuthContext } from "../AuthContext";
 import {BASE_API} from "../config";
 import { SERVICE_UNAVAILABLE_ERROR } from "../messages";
@@ -30,8 +30,22 @@ export default function Login() {
         fetch(`${BASE_API}/login`, requestLogin)
             .then(async response => {
                 let data = await response.json();
-                if (response.ok) 
-                    return login(data, user);
+                if (response.ok){
+                    const access_token = data['access_token']
+                    fetch(`${BASE_API}/user/personal_details`, {
+                        method: "GET",
+                        headers: {
+                             "Authorization": `Bearer ${access_token}`,
+                             "Accept": "application/json",
+                             "Content-Type": "application/json",
+                        }
+                    }).then(async response => {
+                        let userData = await response.json();
+                        if (response.ok)
+                            return login(data, userData['username']); 
+                        setErrorMessage(data.message);
+                    }).catch(() => setErrorMessage(SERVICE_UNAVAILABLE_ERROR));
+                }    
                 setErrorMessage(data.message);
             })
             .catch(() => setErrorMessage(SERVICE_UNAVAILABLE_ERROR));
@@ -92,7 +106,12 @@ export default function Login() {
                         </div>
                         <div className="row button-group">
                             <div className="col">
-                                    <a className="btn btn-primary" id="registerbtn" href="/register" role="button">Sign Up</a>
+                                    <Link 
+                                        className="btn btn-primary" 
+                                        id="registerBtn" 
+                                        to="/register" 
+                                        role="button">Sign Up
+                                    </Link>
                             </div>
                             <div className="col-0.5"></div>
                             <div className="col">
